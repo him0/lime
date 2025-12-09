@@ -140,7 +140,7 @@ prompt_lime_git_dirty() {
     git_status_options+=(--ignore-submodules=dirty)
   fi
 
-  [ -n "$(command git status $git_status_options)" ] && echo -n '*'
+  [ -n "$(command git --no-optional-locks status $git_status_options)" ] && echo -n '*'
 }
 
 prompt_lime_symbol() {
