@@ -112,7 +112,7 @@ prompt_lime_git() {
 }
 
 prompt_lime_git_dirty() {
-  [[ -n "$(command git status --porcelain -unormal --ignore-submodules=dirty)" ]] && print -n '*'
+  [[ -n "$(command git --no-optional-locks status --porcelain -unormal --ignore-submodules=dirty)" ]] && print -n '*'
 }
 
 prompt_lime_symbol() {
