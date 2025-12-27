@@ -1,25 +1,3 @@
-# Outputs -1, 0, or 1 if the installed git version is less than, equal to, or
-# greater than the input version, respectively
-git_compare_version() {
-  local input_version
-  local installed_version
-  input_version=(${(s/./)1})
-  installed_version=($(command git --version 2>/dev/null))
-  installed_version=(${(s/./)installed_version[3]})
-
-  for i in {1..3}; do
-    if [[ $installed_version[$i] -gt $input_version[$i] ]]; then
-      echo 1
-      return 0
-    fi
-    if [[ $installed_version[$i] -lt $input_version[$i] ]]; then
-      echo -1
-      return 0
-    fi
-  done
-  echo 0
-}
-
 prompt_lime_precmd() {
   # Set title
   prompt_lime_set_title
@@ -42,23 +20,23 @@ prompt_lime_set_title() {
     screen*)
       # Set window title
       print -n '\e]0;'
-      echo -n "${window_title}"
+      print -rn "${window_title}"
       print -n '\a'
 
       # Set window name
       print -n '\ek'
-      echo -n "${tab_title}"
+      print -rn "${tab_title}"
       print -n '\e\\'
       ;;
     cygwin|putty*|rxvt*|xterm*)
       # Set window title
       print -n '\e]2;'
-      echo -n "${window_title}"
+      print -rn "${window_title}"
       print -n '\a'
 
       # Set tab name
       print -n '\e]1;'
-      echo -n "${tab_title}"
+      print -rn "${tab_title}"
       print -n '\a'
       ;;
     *)
@@ -66,7 +44,7 @@ prompt_lime_set_title() {
       zmodload zsh/terminfo
       if [[ -n "$terminfo[tsl]" ]] && [[ -n "$terminfo[fsl]" ]]; then
         echoti tsl
-        echo -n "${window_title}"
+        print -rn "${window_title}"
         echoti fsl
       fi
       ;;
@@ -79,8 +57,8 @@ prompt_lime_window_title() {
 }
 
 prompt_lime_tab_title() {
-  if [ "$#" -eq 1 ]; then
-    echo -n "$(prompt_lime_first_command "$1")"
+  if [[ $# -eq 1 ]]; then
+    prompt_lime_first_command "$1"
   else
     # `%40<..<` truncates following string longer than 40 characters with `..`.
     # `%~` is current working directory with `~` instead of full `$HOME` path.
@@ -97,20 +75,20 @@ prompt_lime_first_command() {
 }
 
 prompt_lime_render() {
-  echo -n "${prompt_lime_rendered_user}"
-  echo -n ' '
+  print -rn "${prompt_lime_rendered_user}"
+  print -n ' '
   prompt_lime_dir
-  echo -n ' '
+  print -n ' '
   prompt_lime_git
-  echo -n "${prompt_lime_rendered_symbol}"
+  print -rn "${prompt_lime_rendered_symbol}"
 }
 
 prompt_lime_user() {
   local prompt_color="${LIME_USER_COLOR:-$prompt_lime_default_user_color}"
   if (( ${LIME_SHOW_HOSTNAME:-0} )) && [[ -n "$SSH_CONNECTION" ]]; then
-    echo -n "%F{${prompt_color}}%n@%m%f"
+    print -n "%F{${prompt_color}}%n@%m%f"
   else
-    echo -n "%F{${prompt_color}}%n%f"
+    print -n "%F{${prompt_color}}%n%f"
   fi
 }
 
@@ -118,9 +96,9 @@ prompt_lime_dir() {
   local prompt_color="${LIME_DIR_COLOR:-$prompt_lime_default_dir_color}"
   local dir_components="${LIME_DIR_DISPLAY_COMPONENTS:-0}"
   if (( dir_components )); then
-    echo -n "%F{${prompt_color}}%($((dir_components + 1))~:...%${dir_components}~:%~)%f"
+    print -n "%F{${prompt_color}}%($((dir_components + 1))~:...%${dir_components}~:%~)%f"
   else
-    echo -n "%F{${prompt_color}}%~%f"
+    print -n "%F{${prompt_color}}%~%f"
   fi
 }
 
@@ -130,24 +108,18 @@ prompt_lime_git() {
   [[ -n $working_tree ]] || return
 
   local prompt_color="${LIME_GIT_COLOR:-$prompt_lime_default_git_color}"
-  echo -n "%F{${prompt_color}}${vcs_info_msg_0_}$(prompt_lime_git_dirty)%f "
+  print -n "%F{${prompt_color}}${vcs_info_msg_0_}$(prompt_lime_git_dirty)%f "
 }
 
 prompt_lime_git_dirty() {
-  local git_status_options
-  git_status_options=(--porcelain -unormal)
-  if [[ "$prompt_lime_git_post_1_7_2" -ge 0 ]]; then
-    git_status_options+=(--ignore-submodules=dirty)
-  fi
-
-  [ -n "$(command git status $git_status_options)" ] && echo -n '*'
+  [[ -n "$(command git status --porcelain -unormal --ignore-submodules=dirty)" ]] && print -n '*'
 }
 
 prompt_lime_symbol() {
-  if [ $UID -eq 0 ]; then
-    echo -n '#'
+  if [[ $UID -eq 0 ]]; then
+    print -n '#'
   else
-    echo -n '$'
+    print -n '$'
   fi
 }
 
@@ -175,9 +147,6 @@ prompt_lime_setup() {
   # '%a' is for action like 'rebase', 'rebase-i', 'merge'
   zstyle ':vcs_info:git*' actionformats '%b(%a)' 'x%r'
 
-  # The '--ignore-submodules' option is introduced on git 1.7.2
-  prompt_lime_git_post_1_7_2=$(git_compare_version '1.7.2')
-
   # Support 8 colors
   if [[ "$TERM" = *"256color" ]]; then
     prompt_lime_default_user_color=109
@@ -199,6 +168,3 @@ prompt_lime_setup() {
 }
 
 prompt_lime_setup
-
-# Clean up the namespace
-unfunction git_compare_version
